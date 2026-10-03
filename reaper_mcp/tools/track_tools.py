@@ -249,16 +249,11 @@ def register(mcp: FastMCP):
 
     @mcp.tool()
     async def track_set_input(track_index: int, input_index: int) -> dict:
-        """Set recording input, as REAPER's I_RECINPUT value.
-
-        0-1023 = mono audio input (0 is the first), +1024 = stereo pair
-        starting there, 4096+ = MIDI (4096 + device*32 + channel, where
-        device 63 = all inputs and channel 0 = all channels). -1 is a
-        shorthand for MIDI, all inputs, all channels (6112).
+        """Set recording input. 0-1023=mono (0=first input), +1024=stereo, 4096+=MIDI, -1=MIDI all inputs/channels.
 
         Args:
             track_index: 0-based track index.
-            input_index: -1 (MIDI all inputs, all channels), or an I_RECINPUT value >= 0.
+            input_index: -1 (MIDI all), or an I_RECINPUT value >= 0.
         """
         if track_index < 0:
             raise ReaperMCPError(ErrorCode.VALUE_OUT_OF_RANGE, "track_index must be >= 0")

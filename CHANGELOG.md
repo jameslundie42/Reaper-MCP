@@ -12,9 +12,8 @@ All notable changes to ReaperMCP will be documented in this file.
   reads any negative value as "no input". The handler now translates `-1` to
   `6112` (MIDI, all inputs, all channels); every other value is passed
   through unchanged. The tool's description also had the ranges wrong (`0`
-  is the first mono input, not "none"); it now describes the real
-  `I_RECINPUT` encoding. Tests run the real handler under `lupa` with a
-  stubbed `reaper`.
+  is the first mono input, not "none"); it now gives the correct ranges.
+  Tests run the real handler under `lupa` with a stubbed `reaper`.
 
 ## [0.8.2] - 2026-09-23
 
