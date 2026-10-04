@@ -1143,11 +1143,18 @@ function track.track_select(p)
   return build_track_info(tr, idx)
 end
 
+-- The tool's -1 means "MIDI, all inputs, all channels". REAPER reads a
+-- negative I_RECINPUT as "no input", so it is translated here: 4096 is the
+-- MIDI flag, bits 5-10 the device (63 = all), bits 0-4 the channel (0 = all).
+local RECINPUT_MIDI_ALL = 4096 + (63 << 5)
+
 function track.track_set_input(p)
   local tr, idx, err = get_numbered_track(p)
   if not tr then return nil, err end
   if p.input_index == nil then return nil, "Missing parameter: input_index" end
-  reaper.SetMediaTrackInfo_Value(tr, "I_RECINPUT", math.floor(p.input_index))
+  local input = math.floor(p.input_index)
+  if input == -1 then input = RECINPUT_MIDI_ALL end
+  reaper.SetMediaTrackInfo_Value(tr, "I_RECINPUT", input)
   return build_track_info(tr, idx)
 end
 
