@@ -26,6 +26,7 @@ DESTRUCTIVE_HANDLERS = [
     "track_set_folder",
     "track_set_input",
     "track_set_record_arm",
+    "track_set_record_monitor",
     "track_set_state_chunk",
 ]
 

@@ -567,6 +567,7 @@ local function build_track_info(tr, idx)
     folder_depth = reaper.GetMediaTrackInfo_Value(tr, "I_FOLDERDEPTH"),
     color_r = r, color_g = g, color_b = b,
     input_index = reaper.GetMediaTrackInfo_Value(tr, "I_RECINPUT"),
+    record_monitor = reaper.GetMediaTrackInfo_Value(tr, "I_RECMON"),
     phase_invert = reaper.GetMediaTrackInfo_Value(tr, "B_PHASE") == 1,
     automation_mode = reaper.GetTrackAutomationMode(tr)
   }
@@ -1148,6 +1149,41 @@ end
 -- MIDI flag, bits 5-10 the device (63 = all), bits 0-4 the channel (0 = all).
 local RECINPUT_MIDI_ALL = 4096 + (63 << 5)
 
+-- The audio interface REAPER has open and its inputs, with the exact
+-- I_RECINPUT value for each, so callers never compute the bit layout.
+function track.audio_get_inputs(p)
+  local _, device = reaper.GetAudioDeviceInfo("IDENT_IN")
+  local _, mode = reaper.GetAudioDeviceInfo("MODE")
+  local _, srate = reaper.GetAudioDeviceInfo("SRATE")
+  local _, bsize = reaper.GetAudioDeviceInfo("BSIZE")
+  local n = reaper.GetNumAudioInputs()
+  local channels, stereo_pairs = {}, {}
+  for i = 0, n - 1 do
+    channels[#channels + 1] = {
+      channel = i + 1,
+      name = reaper.GetInputChannelName(i),
+      mono_input_index = i,
+    }
+  end
+  for i = 0, n - 2, 2 do
+    stereo_pairs[#stereo_pairs + 1] = {
+      channels = string.format("%d/%d", i + 1, i + 2),
+      names = reaper.GetInputChannelName(i) .. " / " .. reaper.GetInputChannelName(i + 1),
+      stereo_input_index = 1024 + i,
+    }
+  end
+  return {
+    device = device or "",
+    driver_mode = mode or "",
+    sample_rate = tonumber(srate),
+    block_size = tonumber(bsize),
+    input_count = n,
+    channels = channels,
+    stereo_pairs = stereo_pairs,
+    midi_all_input_index = RECINPUT_MIDI_ALL,
+  }
+end
+
 function track.track_set_input(p)
   local tr, idx, err = get_numbered_track(p)
   if not tr then return nil, err end
@@ -1155,6 +1191,14 @@ function track.track_set_input(p)
   local input = math.floor(p.input_index)
   if input == -1 then input = RECINPUT_MIDI_ALL end
   reaper.SetMediaTrackInfo_Value(tr, "I_RECINPUT", input)
+  return build_track_info(tr, idx)
+end
+
+function track.track_set_record_monitor(p)
+  local tr, idx, err = get_numbered_track(p)
+  if not tr then return nil, err end
+  if p.mode == nil then return nil, "Missing parameter: mode" end
+  reaper.SetMediaTrackInfo_Value(tr, "I_RECMON", math.floor(p.mode))
   return build_track_info(tr, idx)
 end
 
@@ -5796,6 +5840,7 @@ local UNDO_POINT_COMMANDS = {
   track_set_mute = true,
   track_set_pan = true,
   track_set_record_arm = true,
+  track_set_record_monitor = true,
   track_set_solo = true,
   track_set_state_chunk = true,
   track_set_volume = true,
