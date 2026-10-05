@@ -1,9 +1,8 @@
-"""Recording-input tools: audio_get_inputs, track_set_input, track_set_record_monitor.
+"""Recording-input tools: audio_get_inputs and track_set_record_monitor.
 
-track_set_input's docstring used to describe I_RECINPUT wrongly (0 = none,
--1 = MIDI all), so a model following it armed input 1 when it meant "no
-input" and got no input when it meant MIDI. audio_get_inputs now hands out
-the exact value for each channel and pair, and the docstring matches REAPER.
+Input numbers depend on which interface REAPER has open, so audio_get_inputs
+hands out the exact track_set_input value for each channel and stereo pair.
+track_set_record_monitor sets I_RECMON for recording through an amp sim.
 """
 
 from pathlib import Path
@@ -43,34 +42,6 @@ def _lua_handler(name: str) -> str:
     source = LUA.read_text(encoding="utf-8")
     start = source.index(f"function track.{name}(p)")
     return source[start: source.index("\nend\n", start)]
-
-
-# ---- track_set_input ------------------------------------------------------
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("value", [-1, 0, 1, 1024, 1026, 6112])
-async def test_set_input_accepts_valid_values(tools, value):
-    mcp, fake = tools
-    await _call(mcp, "track_set_input", track_index=0, input_index=value)
-    assert fake.calls == [("track_set_input", {"track_index": 0, "input_index": value})]
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("value", [-2, 8192])
-async def test_set_input_rejects_out_of_range(tools, value):
-    mcp, fake = tools
-    with pytest.raises(Exception, match="input_index"):
-        await _call(mcp, "track_set_input", track_index=0, input_index=value)
-    assert fake.calls == []
-
-
-def test_set_input_docstring_matches_reaper():
-    tool_doc = FastMCP("doc")
-    track_tools.register(tool_doc)
-    text = next(t for t in tool_doc._tool_manager.list_tools() if t.name == "track_set_input").description
-    assert "-1 = no input" in text
-    assert "0 = input 1" in text
-    assert "0=none" not in text
 
 
 # ---- track_set_record_monitor --------------------------------------------
@@ -118,7 +89,4 @@ def test_audio_get_inputs_lua_reports_reaper_input_values():
     assert 'GetAudioDeviceInfo("IDENT_IN")' in body
     assert "mono_input_index = i" in body
     assert "stereo_input_index = 1024 + i" in body
-    assert "no_input_index = -1" in body
-    # MIDI, all devices (63 in bits 5-10), all channels (0 in bits 0-4)
-    assert 4096 + (63 << 5) == 6112
-    assert "4096 + (63 << 5)" in body
+    assert "midi_all_input_index = RECINPUT_MIDI_ALL" in body

@@ -6,8 +6,6 @@ from reaper_mcp.safety import ensure_backup
 
 _MAX_TRACK_DELETE_ENTRIES = 200
 _TRACK_DELETE_SELECTORS = ("all", "track_index", "track_indices")
-# I_RECINPUT tops out at MIDI (4096) + all devices (63 << 5) + channel 16.
-_MAX_RECORD_INPUT = 8191
 # REAPER's I_RECMON values.
 _RECORD_MONITOR_MODES = {"off": 0, "on": 1, "tape": 2}
 
@@ -264,29 +262,24 @@ def register(mcp: FastMCP):
             `{device, driver_mode, sample_rate, block_size, input_count,
             channels: [{channel, name, mono_input_index}],
             stereo_pairs: [{channels, names, stereo_input_index}],
-            no_input_index, midi_all_input_index}`
+            midi_all_input_index}`
         """
         return await client.execute("audio_get_inputs")
 
     @mcp.tool()
     async def track_set_input(track_index: int, input_index: int) -> dict:
-        """Set a track's recording input (REAPER's I_RECINPUT value).
-
-        Get the right number from audio_get_inputs rather than computing it.
-        -1 = no input. 0-1023 = mono hardware input, 0-based (0 = input 1).
-        1024 + n = stereo pair starting at 0-based input n (1024 = inputs 1/2).
-        6112 = MIDI, all devices, all channels.
+        """Set recording input. 0-1023=mono (0=first input), +1024=stereo, 4096+=MIDI, -1=MIDI all inputs/channels.
 
         Args:
             track_index: 0-based track index.
-            input_index: -1 for no input, otherwise 0-8191.
+            input_index: -1 (MIDI all), or an I_RECINPUT value >= 0.
         """
         if track_index < 0:
             raise ReaperMCPError(ErrorCode.VALUE_OUT_OF_RANGE, "track_index must be >= 0")
-        if not -1 <= input_index <= _MAX_RECORD_INPUT:
+        if input_index != -1 and input_index < 0:
             raise ReaperMCPError(
                 ErrorCode.VALUE_OUT_OF_RANGE,
-                f"input_index must be -1 (no input) or 0-{_MAX_RECORD_INPUT}, got {input_index}",
+                f"input_index must be -1 (MIDI all) or >= 0, got {input_index}",
             )
         return await client.execute("track_set_input", track_index=track_index, input_index=input_index)
 

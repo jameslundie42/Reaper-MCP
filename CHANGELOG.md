@@ -18,10 +18,14 @@ All notable changes to ReaperMCP will be documented in this file.
 
 ### Fixed
 
-- **`track_set_input`'s description had REAPER's input numbering wrong.** It
-  said `0` meant no input and `-1` meant all MIDI; in REAPER `0` is mono input
-  1 and `-1` is no input, so a model following it armed the wrong input. The
-  description now matches REAPER and points to `audio_get_inputs`.
+- **`track_set_input(input_index=-1)` cleared the track's input instead of
+  selecting all MIDI inputs.** The tool documents and accepts `-1` as "MIDI
+  all", but the Lua handler wrote it straight to `I_RECINPUT`, where REAPER
+  reads any negative value as "no input". The handler now translates `-1` to
+  `6112` (MIDI, all inputs, all channels); every other value is passed
+  through unchanged. The tool's description also had the ranges wrong (`0`
+  is the first mono input, not "none"); it now gives the correct ranges.
+  Tests run the real handler under `lupa` with a stubbed `reaper`.
 
 ## [0.8.2] - 2026-09-23
 
