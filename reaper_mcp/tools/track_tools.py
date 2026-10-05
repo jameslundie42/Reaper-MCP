@@ -6,6 +6,10 @@ from reaper_mcp.safety import ensure_backup
 
 _MAX_TRACK_DELETE_ENTRIES = 200
 _TRACK_DELETE_SELECTORS = ("all", "track_index", "track_indices")
+# I_RECINPUT tops out at MIDI (4096) + all devices (63 << 5) + channel 16.
+_MAX_RECORD_INPUT = 8191
+# REAPER's I_RECMON values.
+_RECORD_MONITOR_MODES = {"off": 0, "on": 1, "tape": 2}
 
 
 def _is_index(value) -> bool:
@@ -248,21 +252,68 @@ def register(mcp: FastMCP):
         return await client.execute("track_select", track_index=track_index, selected=selected, exclusive=exclusive)
 
     @mcp.tool()
+    async def audio_get_inputs() -> dict:
+        """List the audio interface REAPER is using and its input channels.
+
+        Call this before track_set_input: the input numbers depend on which
+        interface is connected, and each channel/pair in the result carries the
+        exact input_index to pass. Also reports driver, sample rate and buffer
+        size. input_count 0 means REAPER's audio device is closed or missing.
+
+        Returns:
+            `{device, driver_mode, sample_rate, block_size, input_count,
+            channels: [{channel, name, mono_input_index}],
+            stereo_pairs: [{channels, names, stereo_input_index}],
+            no_input_index, midi_all_input_index}`
+        """
+        return await client.execute("audio_get_inputs")
+
+    @mcp.tool()
     async def track_set_input(track_index: int, input_index: int) -> dict:
-        """Set recording input. 0=none, 1-1024=mono, 1024+=stereo, 4096+=MIDI, -1=MIDI all.
+        """Set a track's recording input (REAPER's I_RECINPUT value).
+
+        Get the right number from audio_get_inputs rather than computing it.
+        -1 = no input. 0-1023 = mono hardware input, 0-based (0 = input 1).
+        1024 + n = stereo pair starting at 0-based input n (1024 = inputs 1/2).
+        6112 = MIDI, all devices, all channels.
 
         Args:
             track_index: 0-based track index.
-            input_index: Input channel index. Valid values: -1 (MIDI all inputs), or >= 0.
+            input_index: -1 for no input, otherwise 0-8191.
         """
         if track_index < 0:
             raise ReaperMCPError(ErrorCode.VALUE_OUT_OF_RANGE, "track_index must be >= 0")
-        if input_index != -1 and input_index < 0:
+        if not -1 <= input_index <= _MAX_RECORD_INPUT:
             raise ReaperMCPError(
                 ErrorCode.VALUE_OUT_OF_RANGE,
-                f"input_index must be -1 (MIDI all) or >= 0, got {input_index}",
+                f"input_index must be -1 (no input) or 0-{_MAX_RECORD_INPUT}, got {input_index}",
             )
         return await client.execute("track_set_input", track_index=track_index, input_index=input_index)
+
+    @mcp.tool()
+    async def track_set_record_monitor(track_index: int, mode: str) -> dict:
+        """Set input monitoring: whether you hear the input through the track's FX.
+
+        Turn it on when recording a dry signal through plugins on the track
+        (a DI guitar or bass into an amp sim). Leave it off when the source
+        is already monitored elsewhere (an amp, or the interface's own direct
+        monitoring), or you hear the part twice.
+
+        Args:
+            track_index: 0-based track index.
+            mode: "off", "on", or "tape" (on while stopped or recording, off
+                while playing back, so you hear the take, not the input).
+        """
+        if track_index < 0:
+            raise ReaperMCPError(ErrorCode.VALUE_OUT_OF_RANGE, "track_index must be >= 0")
+        if mode not in _RECORD_MONITOR_MODES:
+            raise ReaperMCPError(
+                ErrorCode.INVALID_PARAMETER,
+                f"mode must be one of {', '.join(_RECORD_MONITOR_MODES)}, got {mode!r}",
+            )
+        return await client.execute(
+            "track_set_record_monitor", track_index=track_index, mode=_RECORD_MONITOR_MODES[mode]
+        )
 
     @mcp.tool()
     async def track_get_mixer_state() -> dict:

@@ -171,7 +171,7 @@ Open your AI client and start talking:
 | Category | Tools | Highlights |
 |----------|------:|------------|
 | **Transport** | 11 | Play, stop, pause, record, set BPM, time signature, playrate, toggle repeat/metronome |
-| **Tracks** | 18 | Create, delete, rename, volume, pan, mute, solo, arm, colour, input, folder, mixer state, peak meter, freeze/unfreeze |
+| **Tracks** | 20 | Create, delete, rename, volume, pan, mute, solo, arm, colour, list audio inputs, input, input monitoring, folder, mixer state, peak meter, freeze/unfreeze |
 | **Track Templates** | 4 | Save, apply, list, and delete REAPER track templates |
 | **Project** | 19 | New, open, save, save-as, backup, export audio (WAV/MP3/OGG/FLAC/AIFF), undo/redo (by count, or a whole tool run), notes, grid, render metadata (`project_get/set_metadata`), Notes-tab Title/Author (`project_get/set_notes_info`), `project_get_overview` (change count + info in one call) |
 | **Items** | 14 | Get/select/split/delete/move items, set length/volume/mute/fade, insert media, create MIDI, move to track, `items_apply` (batch edits) |
@@ -315,7 +315,7 @@ Reaper-MCP/
 │   │       └── _shared.py          # Shared role → EQ/comp library
 │   └── tools/                      # 26 modules, 181 auto-registered tools
 │       ├── transport_tools.py      # Playback and recording (11)
-│       ├── track_tools.py          # Track management + freeze (18)
+│       ├── track_tools.py          # Track management + freeze (20)
 │       ├── template_tools.py       # Track templates (4)
 │       ├── project_tools.py        # Project/file operations + metadata (18)
 │       ├── item_tools.py           # Media item management + batch apply (14)

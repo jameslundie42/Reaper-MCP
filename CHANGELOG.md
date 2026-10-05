@@ -4,6 +4,25 @@ All notable changes to ReaperMCP will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **`audio_get_inputs`** lists the audio interface REAPER has open (device,
+  driver, sample rate, buffer size) and each input channel and stereo pair by
+  name, with the exact `input_index` to pass to `track_set_input`. Input
+  numbers change with the interface, so a session can check what's connected
+  instead of guessing.
+- **`track_set_record_monitor(track_index, mode)`** sets input monitoring
+  (`off` / `on` / `tape`), needed to hear a DI guitar or bass through an amp
+  sim while recording. `track_get_info` and friends now report
+  `record_monitor`.
+
+### Fixed
+
+- **`track_set_input`'s description had REAPER's input numbering wrong.** It
+  said `0` meant no input and `-1` meant all MIDI; in REAPER `0` is mono input
+  1 and `-1` is no input, so a model following it armed the wrong input. The
+  description now matches REAPER and points to `audio_get_inputs`.
+
 ## [0.8.2] - 2026-09-23
 
 ### Added

@@ -78,7 +78,7 @@ On startup the server writes a banner to stderr confirming the active profile, r
 | Domain | Module | Count |
 |--------|--------|------:|
 | [Transport](#transport) | `transport_tools.py` | 11 |
-| [Tracks](#tracks) | `track_tools.py` | 18 |
+| [Tracks](#tracks) | `track_tools.py` | 20 |
 | [Track Templates](#track-templates) | `template_tools.py` | 4 |
 | [Project](#project) | `project_tools.py` | 18 |
 | [Items](#items) | `item_tools.py` | 14 |
@@ -142,7 +142,9 @@ Create, delete, rename, route, colour, freeze, and inspect tracks. Source: `trac
 | `track_set_record_arm(track_index, arm)` | Arm / disarm for recording. |
 | `track_set_color(track_index, r, g, b)` | Set track colour from RGB (0–255 each). |
 | `track_select(track_index, selected=True, exclusive=False)` | Select (optionally exclusively) a track. |
-| `track_set_input(track_index, input_index)` | Assign a REAPER input channel. |
+| `audio_get_inputs()` | The audio interface REAPER has open (device, driver, sample rate, buffer) and each input channel and stereo pair, with the exact `input_index` to pass to `track_set_input`. |
+| `track_set_input(track_index, input_index)` | Set a track's recording input. `-1` = none, `0`–`1023` = mono input (0-based), `1024 + n` = stereo pair starting at input `n`, `6112` = all MIDI. Get the value from `audio_get_inputs`. |
+| `track_set_record_monitor(track_index, mode)` | Input monitoring: `off`, `on`, or `tape` (on while stopped or recording, off during playback). |
 | `track_get_mixer_state()` | Snapshot of every track's mixer state in one call. |
 | `track_get_peak(track_index)` | Current peak meter reading in dB. |
 | `track_freeze(track_index)` | Freeze a track to audio (bounces FX, reduces CPU). |
